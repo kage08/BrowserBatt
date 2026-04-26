@@ -1,0 +1,51 @@
+{
+  "browsers": ["chrome", "safari", "edge", "firefox"],
+  "workloads": {
+    "daily": {
+      "duration_seconds": 45,
+      "youtube_url": "https://www.youtube.com/watch?v=jfKfPfyJRdk",
+      "google_docs_url": "https://docs.google.com/document/u/0/create",
+      "news_urls": [
+        "https://www.nytimes.com/",
+        "https://www.theverge.com/"
+      ],
+      "blog_urls": [
+        "https://stratechery.com/"
+      ],
+      "github_url": "https://github.com/python/cpython"
+    },
+    "media": {
+      "duration_seconds": 45,
+      "youtube_url": "https://www.youtube.com/watch?v=jfKfPfyJRdk"
+    },
+    "reading": {
+      "duration_seconds": 45,
+      "news_urls": [
+        "https://www.nytimes.com/",
+        "https://www.theverge.com/"
+      ],
+      "blog_urls": [
+        "https://stratechery.com/"
+      ],
+      "github_url": "https://github.com/python/cpython"
+    }
+  },
+  "measurement": {
+    "repetitions": 1,
+    "warmup_seconds": 0,
+    "cooldown_seconds": 2,
+    "baseline_seconds": 5,
+    "sample_interval_seconds": 1,
+    "min_battery_percent": 5,
+    "require_battery_power": false,
+    "use_powermetrics": false,
+    "screen_brightness_percent": 50,
+    "browser_order": ["chrome", "safari", "edge", "firefox"]
+  },
+  "automation": {
+    "viewport_width": 1440,
+    "viewport_height": 900,
+    "typing_cadence_seconds": 0.02,
+    "docs_cleanup_policy": "record_for_manual_cleanup"
+  }
+}
