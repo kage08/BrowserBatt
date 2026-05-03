@@ -14,6 +14,7 @@ Use this guide when making code changes or running checks in this repository.
 - `browserbatt/analysis.py`: aggregation, derived metrics, and report generation.
 - `browserbatt/config.py`: config loading, validation, and defaults.
 - `browserbatt/macos.py`: macOS-specific helpers for power, display brightness, and system tools.
+- `browserbatt/util.py`: shared utilities for JSON/CSV I/O, subprocess, and time.
 - `config.example.json`: full example benchmark configuration.
 - `config.quick-daily.json` and `config.quick-edge-daily.json`: shorter preset configs.
 - `runs/`: generated benchmark output. Treat as local data unless the user explicitly asks to inspect or modify it.
@@ -49,6 +50,7 @@ BrowserBatt intentionally interacts with the local machine:
 - Full runs start `caffeinate -dimsu` to prevent sleep.
 - Battery-mode benchmark runs can take hours.
 - `powermetrics` requires `sudo`; the recommended flow is `sudo -v` before a run.
+- Benchmarks automatically stop early if battery drops below `min_battery_percent` (config), logging the run as `partial` in `status.json`.
 
 Do not start long benchmark runs unless the user explicitly asks. Prefer `doctor`, `smoke`, static checks, or `analyze` while developing.
 
@@ -66,6 +68,7 @@ Do not start long benchmark runs unless the user explicitly asks. Prefer `doctor
 ### Add or Adjust a Browser
 
 1. Update browser metadata and launch/control behavior in `browserbatt/browser.py`.
+   Some browsers use a different process name than their app name (e.g., Zen). Use the `process_name` field in `BrowserSpec` to handle these cases.
 2. Check whether workload actions in `browserbatt/workloads.py` need browser-specific handling.
 3. Run a short smoke test for the browser:
 
