@@ -14,6 +14,7 @@ class BrowserSpec:
     key: str
     app_name: str
     bundle_path: str
+    process_name: str | None = None
 
 
 BROWSERS: dict[str, BrowserSpec] = {
@@ -21,6 +22,7 @@ BROWSERS: dict[str, BrowserSpec] = {
     "safari": BrowserSpec("safari", "Safari", "/Applications/Safari.app"),
     "edge": BrowserSpec("edge", "Microsoft Edge", "/Applications/Microsoft Edge.app"),
     "firefox": BrowserSpec("firefox", "Firefox", "/Applications/Firefox.app"),
+    "zen": BrowserSpec("zen", "Zen", "/Applications/Zen.app", process_name="zen"),
 }
 
 
@@ -51,7 +53,7 @@ class BrowserController:
             time.sleep(0.5)
 
     def is_running(self) -> bool:
-        proc = run_cmd(["pgrep", "-x", self.spec.app_name])
+        proc = run_cmd(["pgrep", "-x", self.spec.process_name or self.spec.app_name])
         return proc.returncode == 0
 
     def launch_clean(self) -> None:

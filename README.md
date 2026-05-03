@@ -125,7 +125,7 @@ uv run browserbatt smoke --browser chrome --workload reading --duration-seconds 
 Options:
 
 - `--config PATH`: config file to load. Default: `config.example.json`.
-- `--browser {chrome,edge,firefox,safari}`: browser to test.
+- `--browser {chrome,edge,firefox,safari,zen}`: browser to test.
 - `--workload {daily,media,reading}`: workload to test. Default: `reading`.
 - `--duration-seconds N`: measured workload duration for the smoke run. Default: `90`.
 - `--out PATH`: output directory. Default: `runs`.
@@ -142,7 +142,7 @@ Options:
 
 - `--config PATH`: config file to load. Default: `config.example.json`.
 - `--workload {daily,media,reading}`: workload to run.
-- `--browser {chrome,edge,firefox,safari}`: restrict the run to one browser. Repeat for a subset.
+- `--browser {chrome,edge,firefox,safari,zen}`: restrict the run to one browser. Repeat for a subset.
 - `--out PATH`: output directory. Default: `runs`.
 - `--yes`: required confirmation for a long run that closes/opens browsers.
 
@@ -150,6 +150,7 @@ Real benchmark runs:
 
 - Require battery power when `require_battery_power` is true.
 - Refuse to start below `min_battery_percent`.
+- Stop early if battery drops below `min_battery_percent`, then generate the best partial report from completed measurements.
 - Set and verify `screen_brightness_percent`, 50% by default.
 - Start `caffeinate -dimsu` to prevent sleep.
 - Write raw telemetry and summaries under `runs/<run-id>/`.
@@ -188,7 +189,7 @@ Important fields:
 - `measurement.browser_order`: base browser order used for rotated repetitions.
 - `automation.viewport_width` / `automation.viewport_height`: browser window size.
 
-Default full workload timing is roughly 5.9 hours per workload across four browsers.
+Default full workload timing is roughly 7.5 hours per workload across five browsers.
 
 ## Outputs
 

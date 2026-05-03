@@ -10,6 +10,7 @@ Initial browsers:
 - Safari
 - Microsoft Edge
 - Firefox
+- Zen Browser
 
 Primary outputs:
 

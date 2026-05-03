@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -102,7 +103,15 @@ def run(args: argparse.Namespace) -> None:
         print("Warning: this exceeds the 6 hour target. Reduce durations/repetitions if that is not intended.")
     root = run_workload(config, args.workload, args.out, dry_run=False)
     analyze(root)
-    print(f"Benchmark complete: {root}")
+    status_path = root / "status.json"
+    partial = False
+    if status_path.exists():
+        data = json.loads(status_path.read_text(encoding="utf-8"))
+        partial = bool(data.get("partial"))
+    if partial:
+        print(f"Benchmark stopped early (partial results): {root}")
+    else:
+        print(f"Benchmark complete: {root}")
     print(f"Report: {root / 'report.md'}")
 
 

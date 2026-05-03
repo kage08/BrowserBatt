@@ -14,6 +14,10 @@ from .util import append_jsonl, now_iso, sleep_until, write_json
 from .workloads import WorkloadRunner
 
 
+class LowBatteryStop(RuntimeError):
+    """Raised when battery drops below the configured minimum threshold."""
+
+
 def run_workload(config: BrowserBattConfig, workload: str, out_root: Path, dry_run: bool = False) -> Path:
     if workload not in config.workloads:
         raise ValueError(f"Workload not configured: {workload}")
@@ -21,7 +25,7 @@ def run_workload(config: BrowserBattConfig, workload: str, out_root: Path, dry_r
     root = out_root / run_id
     root.mkdir(parents=True, exist_ok=False)
 
-    status = {"started_at": now_iso(), "completed": False, "error": None}
+    status = {"started_at": now_iso(), "completed": False, "partial": False, "error": None}
     write_json(root / "status.json", status)
     _progress(f"Run directory: {root}")
     try:
@@ -70,6 +74,13 @@ def run_workload(config: BrowserBattConfig, workload: str, out_root: Path, dry_r
         status["completed"] = True
         status["finished_at"] = now_iso()
         write_json(root / "status.json", status)
+    except LowBatteryStop as exc:
+        status["partial"] = True
+        status["error"] = repr(exc)
+        status["finished_at"] = now_iso()
+        write_json(root / "status.json", status)
+        append_jsonl(root / "events.jsonl", {"timestamp": time.time(), "event": "run_stopped_low_battery", "error": repr(exc)})
+        _progress(f"Stopping early due to low battery: {exc}")
     except Exception as exc:
         status["error"] = repr(exc)
         status["finished_at"] = now_iso()
@@ -207,7 +218,7 @@ def _preflight(config: BrowserBattConfig, dry_run: bool, context: str) -> None:
         if status.is_charging:
             raise RuntimeError(f"Mac appears to be charging during {context}")
     if status.percent is not None and status.percent < config.measurement.min_battery_percent:
-        raise RuntimeError(f"Battery is below minimum threshold during {context}: {status.percent}%")
+        raise LowBatteryStop(f"Battery is below minimum threshold during {context}: {status.percent}%")
 
 
 def _set_brightness(config: BrowserBattConfig, dry_run: bool, context: str) -> None:

@@ -1,5 +1,5 @@
 {
-  "browsers": ["chrome", "safari", "edge", "firefox"],
+  "browsers": ["chrome", "safari", "edge", "firefox", "zen"],
   "workloads": {
     "daily": {
       "duration_seconds": 720,
@@ -36,11 +36,11 @@
     "cooldown_seconds": 180,
     "baseline_seconds": 600,
     "sample_interval_seconds": 2,
-    "min_battery_percent": 25,
+    "min_battery_percent": 15,
     "require_battery_power": true,
     "use_powermetrics": true,
     "screen_brightness_percent": 50,
-    "browser_order": ["chrome", "safari", "edge", "firefox"]
+    "browser_order": ["chrome", "safari", "edge", "firefox", "zen"]
   },
   "automation": {
     "viewport_width": 1440,

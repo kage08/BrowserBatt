@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 
-KNOWN_BROWSERS = ("chrome", "safari", "edge", "firefox")
+KNOWN_BROWSERS = ("chrome", "safari", "edge", "firefox", "zen")
 KNOWN_WORKLOADS = ("daily", "media", "reading")
 
 
@@ -17,7 +17,7 @@ class MeasurementConfig:
     cooldown_seconds: int = 180
     baseline_seconds: int = 600
     sample_interval_seconds: int = 2
-    min_battery_percent: int = 25
+    min_battery_percent: int = 15
     require_battery_power: bool = True
     use_powermetrics: bool = True
     screen_brightness_percent: int | None = 50

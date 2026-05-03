@@ -1,5 +1,5 @@
 {
-  "browsers": ["chrome", "safari", "edge", "firefox"],
+  "browsers": ["chrome", "safari", "edge", "firefox", "zen"],
   "workloads": {
     "daily": {
       "duration_seconds": 45,
@@ -40,7 +40,7 @@
     "require_battery_power": false,
     "use_powermetrics": false,
     "screen_brightness_percent": 50,
-    "browser_order": ["chrome", "safari", "edge", "firefox"]
+    "browser_order": ["chrome", "safari", "edge", "firefox", "zen"]
   },
   "automation": {
     "viewport_width": 1440,

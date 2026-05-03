@@ -121,6 +121,7 @@ def browser_versions() -> dict[str, str | None]:
         "safari": "/Applications/Safari.app",
         "edge": "/Applications/Microsoft Edge.app",
         "firefox": "/Applications/Firefox.app",
+        "zen": "/Applications/Zen.app",
     }
     out: dict[str, str | None] = {}
     for key, app in apps.items():
@@ -184,6 +185,7 @@ def process_snapshot(browser: str) -> list[dict[str, Any]]:
         "safari": "Safari|com.apple.WebKit",
         "edge": "Microsoft Edge",
         "firefox": "Firefox",
+        "zen": "Zen|zen",
     }
     pattern = patterns.get(browser, browser)
     proc = run_cmd(["ps", "-axo", "pid,ppid,%cpu,%mem,rss,comm"])
