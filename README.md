@@ -68,7 +68,7 @@ YouTube-focused playback workload.
 Behavior:
 
 - Opens the configured `youtube_url`.
-- Starts/continues playback with the YouTube `k` shortcut.
+- Adds YouTube's `autoplay=1` URL parameter.
 - Keeps the page active with occasional light scrolling.
 - Measures browser/system power during the configured duration.
 
@@ -221,6 +221,7 @@ Important files:
 - Google Docs support creates disposable benchmark documents when configured, then records cleanup instructions/URLs.
 - Safari may require Develop -> Allow Remote Automation.
 - macOS may require Accessibility permission for Terminal/Codex/Python to send keystrokes.
+- Chrome/Edge are launched with a blank window and crash-restore prompts suppressed; if Chromium itself crashes at startup, BrowserBatt retries the window cleanup before measuring instead of sampling restored windows.
 - Automatic Google Docs deletion is intentionally not done yet; run outputs include `google-docs-cleanup.md` with captured URLs to delete after verification.
 
 ## Files

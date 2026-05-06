@@ -9,6 +9,9 @@ from subprocess import TimeoutExpired
 from .util import run_cmd
 
 
+CHROMIUM_BROWSER_KEYS = {"chrome", "edge"}
+
+
 @dataclass(frozen=True)
 class BrowserSpec:
     key: str
@@ -21,7 +24,7 @@ BROWSERS: dict[str, BrowserSpec] = {
     "chrome": BrowserSpec("chrome", "Google Chrome", "/Applications/Google Chrome.app"),
     "safari": BrowserSpec("safari", "Safari", "/Applications/Safari.app"),
     "edge": BrowserSpec("edge", "Microsoft Edge", "/Applications/Microsoft Edge.app"),
-    "firefox": BrowserSpec("firefox", "Firefox", "/Applications/Firefox.app"),
+    "firefox": BrowserSpec("firefox", "Firefox", "/Applications/Firefox.app", process_name="firefox"),
     "zen": BrowserSpec("zen", "Zen", "/Applications/Zen.app", process_name="zen"),
 }
 
@@ -42,15 +45,30 @@ class BrowserController:
         return Path(self.spec.bundle_path).exists()
 
     def quit(self) -> None:
+        if not self.is_running():
+            return
+        process_name = self.spec.process_name or self.spec.app_name
         try:
-            run_cmd(["osascript", "-e", f'tell application "{self.spec.app_name}" to quit'], timeout=5)
+            proc = run_cmd(["osascript", "-e", f'tell application "{self.spec.app_name}" to quit'], timeout=5)
         except TimeoutExpired:
-            run_cmd(["osascript", "-e", f'tell application "System Events" to tell process "{self.spec.app_name}" to quit'], timeout=5)
+            proc = None
+        if proc is None or proc.returncode != 0:
+            try:
+                run_cmd(["osascript", "-e", f'tell application "System Events" to tell process "{self.spec.app_name}" to quit'], timeout=5)
+            except TimeoutExpired:
+                pass
         deadline = time.time() + 20
         while time.time() < deadline:
             if not self.is_running():
                 return
             time.sleep(0.5)
+        run_cmd(["pkill", "-TERM", "-x", process_name], timeout=5)
+        deadline = time.time() + 10
+        while time.time() < deadline:
+            if not self.is_running():
+                return
+            time.sleep(0.5)
+        raise RuntimeError(f"{self.spec.app_name} did not quit cleanly")
 
     def is_running(self) -> bool:
         proc = run_cmd(["pgrep", "-x", self.spec.process_name or self.spec.app_name])
@@ -58,13 +76,33 @@ class BrowserController:
 
     def launch_clean(self) -> None:
         self.quit()
-        run_cmd(["open", "-a", self.spec.app_name], timeout=10)
-        time.sleep(4)
+        self._open_for_clean_launch()
+        self._wait_until_running()
+        time.sleep(3)
         self.activate(required=False)
-        self.close_all_windows()
-        self.new_window()
+        self._normalize_single_window()
         self.resize_front_window()
         time.sleep(1)
+
+    def _open_for_clean_launch(self) -> None:
+        args = ["open", "-a", self.spec.app_name]
+        if self.key in CHROMIUM_BROWSER_KEYS:
+            args += [
+                "--args",
+                "--disable-session-crashed-bubble",
+                "--no-first-run",
+                "--new-window",
+                "about:blank",
+            ]
+        run_cmd(args, timeout=10, check=True)
+
+    def _wait_until_running(self) -> None:
+        deadline = time.time() + 30
+        while time.time() < deadline:
+            if self.is_running():
+                return
+            time.sleep(0.25)
+        raise RuntimeError(f"{self.spec.app_name} did not start")
 
     def activate(self, required: bool = True) -> None:
         errors: list[str] = []
@@ -121,6 +159,46 @@ class BrowserController:
         self.activate()
         self.keystroke("n", modifiers=["command"])
         time.sleep(1)
+
+    def _normalize_single_window(self) -> None:
+        # Chromium can restore crashed sessions a moment after first launch. Loop
+        # briefly so restored empty/session windows are closed before sampling.
+        for _ in range(3):
+            self.close_all_windows()
+            time.sleep(1)
+            if self._window_count() == 0:
+                break
+        self.new_window()
+        time.sleep(1)
+        self._close_background_windows()
+
+    def _window_count(self) -> int:
+        script = f'''
+        tell application "{self.spec.app_name}"
+          return count of windows
+        end tell
+        '''
+        try:
+            proc = run_cmd(["osascript", "-e", script], timeout=3, check=True)
+        except Exception:
+            return 0
+        try:
+            return int(proc.stdout.strip())
+        except ValueError:
+            return 0
+
+    def _close_background_windows(self) -> None:
+        script = f'''
+        tell application "{self.spec.app_name}"
+          repeat while (count of windows) > 1
+            close window 2
+          end repeat
+        end tell
+        '''
+        try:
+            run_cmd(["osascript", "-e", script], timeout=3)
+        except TimeoutExpired:
+            pass
 
     def resize_front_window(self) -> None:
         script = f'''

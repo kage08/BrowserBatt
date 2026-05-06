@@ -3,6 +3,7 @@ from __future__ import annotations
 import time
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from .browser import BrowserController
 from .util import append_jsonl
@@ -66,9 +67,9 @@ class WorkloadRunner:
         self._github(cfg["github_url"], seconds["github"])
 
     def _youtube(self, url: str, seconds: int) -> None:
-        self._event("phase_start", phase="youtube", url=url, seconds=seconds)
-        self.browser.open_url(url, wait_seconds=8)
-        self.browser.play_pause()
+        playback_url = _youtube_playback_url(url)
+        self._event("phase_start", phase="youtube", url=playback_url, configured_url=url, seconds=seconds)
+        self.browser.open_url(playback_url, wait_seconds=8)
         self._active_wait(seconds, action="youtube")
         self._event("phase_end", phase="youtube")
 
@@ -78,10 +79,10 @@ class WorkloadRunner:
         index = 1
 
         youtube_url = cfg["youtube_url"]
-        self.browser.open_url(youtube_url, wait_seconds=8)
-        self.browser.play_pause()
-        tabs["youtube"] = {"index": index, "url": youtube_url}
-        self._event("daily_tab_opened", phase="youtube", tab_index=index, url=youtube_url)
+        playback_url = _youtube_playback_url(youtube_url)
+        self.browser.open_url(playback_url, wait_seconds=8)
+        tabs["youtube"] = {"index": index, "url": playback_url, "configured_url": youtube_url}
+        self._event("daily_tab_opened", phase="youtube", tab_index=index, url=playback_url, configured_url=youtube_url)
 
         index += 1
         docs_url = cfg.get("google_docs_url", "https://docs.google.com/document/u/0/create")
@@ -217,7 +218,6 @@ class WorkloadRunner:
     def _event(self, event: str, **data: Any) -> None:
         append_jsonl(self.events_path, {"timestamp": time.time(), "event": event, **data})
 
-
 def _phase_seconds(phases: list[tuple[str, float]], total: int) -> dict[str, int]:
     allocated = {name: int(total * fraction) for name, fraction in phases}
     remainder = total - sum(allocated.values())
@@ -228,3 +228,11 @@ def _phase_seconds(phases: list[tuple[str, float]], total: int) -> dict[str, int
 
 def _is_google_doc_url(url: str) -> bool:
     return url.startswith("https://docs.google.com/document/d/")
+
+
+def _youtube_playback_url(url: str) -> str:
+    parsed = urlsplit(url)
+    params = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    params["autoplay"] = "1"
+    query = urlencode(params)
+    return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, query, parsed.fragment))
