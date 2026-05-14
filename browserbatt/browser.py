@@ -8,7 +8,6 @@ from subprocess import TimeoutExpired
 
 from .util import run_cmd
 
-
 CHROMIUM_BROWSER_KEYS = {"chrome", "edge"}
 
 
@@ -24,7 +23,9 @@ BROWSERS: dict[str, BrowserSpec] = {
     "chrome": BrowserSpec("chrome", "Google Chrome", "/Applications/Google Chrome.app"),
     "safari": BrowserSpec("safari", "Safari", "/Applications/Safari.app"),
     "edge": BrowserSpec("edge", "Microsoft Edge", "/Applications/Microsoft Edge.app"),
-    "firefox": BrowserSpec("firefox", "Firefox", "/Applications/Firefox.app", process_name="firefox"),
+    "firefox": BrowserSpec(
+        "firefox", "Firefox", "/Applications/Firefox.app", process_name="firefox"
+    ),
     "zen": BrowserSpec("zen", "Zen", "/Applications/Zen.app", process_name="zen"),
 }
 
@@ -49,12 +50,22 @@ class BrowserController:
             return
         process_name = self.spec.process_name or self.spec.app_name
         try:
-            proc = run_cmd(["osascript", "-e", f'tell application "{self.spec.app_name}" to quit'], timeout=5)
+            proc = run_cmd(
+                ["osascript", "-e", f'tell application "{self.spec.app_name}" to quit'],
+                timeout=5,
+            )
         except TimeoutExpired:
             proc = None
         if proc is None or proc.returncode != 0:
             try:
-                run_cmd(["osascript", "-e", f'tell application "System Events" to tell process "{self.spec.app_name}" to quit'], timeout=5)
+                run_cmd(
+                    [
+                        "osascript",
+                        "-e",
+                        f'tell application "System Events" to tell process "{self.spec.app_name}" to quit',
+                    ],
+                    timeout=5,
+                )
             except TimeoutExpired:
                 pass
         deadline = time.time() + 20
@@ -114,7 +125,15 @@ class BrowserController:
             errors.append(f"open: {exc!r}")
 
         try:
-            run_cmd(["osascript", "-e", f'tell application "{self.spec.app_name}" to activate'], timeout=8, check=True)
+            run_cmd(
+                [
+                    "osascript",
+                    "-e",
+                    f'tell application "{self.spec.app_name}" to activate',
+                ],
+                timeout=8,
+                check=True,
+            )
             time.sleep(0.5)
             return
         except Exception as exc:
@@ -135,7 +154,9 @@ class BrowserController:
             errors.append(f"system_events_frontmost: {exc!r}")
 
         if required:
-            raise RuntimeError(f"Could not activate {self.spec.app_name}: {'; '.join(errors)}")
+            raise RuntimeError(
+                f"Could not activate {self.spec.app_name}: {'; '.join(errors)}"
+            )
         time.sleep(0.5)
 
     def close_all_windows(self) -> None:
@@ -242,7 +263,13 @@ class BrowserController:
                 return value
             return None
         finally:
-            subprocess.run(["pbcopy"], input=old_clipboard, text=True, capture_output=True, timeout=2)
+            subprocess.run(
+                ["pbcopy"],
+                input=old_clipboard,
+                text=True,
+                capture_output=True,
+                timeout=2,
+            )
 
     def new_tab(self, url: str, wait_seconds: float = 5) -> None:
         self.activate()
@@ -288,7 +315,9 @@ class BrowserController:
             self.type_text(chunk)
             time.sleep(max(cadence * len(chunk), 0.05))
 
-    def keystroke(self, key: str, modifiers: list[str] | None = None, timeout: float | None = 5) -> None:
+    def keystroke(
+        self, key: str, modifiers: list[str] | None = None, timeout: float | None = 5
+    ) -> None:
         if modifiers:
             using = " using {" + ", ".join(f"{m} down" for m in modifiers) + "}"
         else:
@@ -328,7 +357,9 @@ class BrowserController:
         last_error: Exception | None = None
         for attempt_timeout in (timeout, max(timeout, 20)):
             try:
-                run_cmd(["osascript", "-e", script], timeout=attempt_timeout, check=True)
+                run_cmd(
+                    ["osascript", "-e", script], timeout=attempt_timeout, check=True
+                )
                 return
             except TimeoutExpired as exc:
                 last_error = exc

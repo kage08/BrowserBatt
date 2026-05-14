@@ -8,7 +8,6 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from .browser import BrowserController
 from .util import append_jsonl
 
-
 DOC_TEXT = """BrowserBatt benchmark note.
 
 This disposable document is being edited by an automated macOS benchmark. The text is intentionally ordinary: a few headings, short paragraphs, edits, and pauses to approximate daily document work. The benchmark measures browser power draw, not typing speed.
@@ -23,7 +22,9 @@ SHORT_DOC_TEXT = "BrowserBatt short smoke-test edit.\n"
 
 
 class WorkloadRunner:
-    def __init__(self, browser: BrowserController, events_path: Path, typing_cadence: float) -> None:
+    def __init__(
+        self, browser: BrowserController, events_path: Path, typing_cadence: float
+    ) -> None:
         self.browser = browser
         self.events_path = events_path
         self.typing_cadence = typing_cadence
@@ -54,7 +55,9 @@ class WorkloadRunner:
         self._work_daily_tab("docs", tabs["docs"], seconds["docs"])
         self._work_daily_tab("news", tabs.get("news", []), seconds["news"])
         self._work_daily_tab("blog", tabs.get("blog", []), seconds["blog"])
-        self._work_daily_tab("github", tabs["github"], max(0, int(deadline - time.monotonic())))
+        self._work_daily_tab(
+            "github", tabs["github"], max(0, int(deadline - time.monotonic()))
+        )
 
     def media(self, cfg: dict[str, Any], duration: int) -> None:
         self._youtube(cfg["youtube_url"], duration)
@@ -68,7 +71,13 @@ class WorkloadRunner:
 
     def _youtube(self, url: str, seconds: int) -> None:
         playback_url = _youtube_playback_url(url)
-        self._event("phase_start", phase="youtube", url=playback_url, configured_url=url, seconds=seconds)
+        self._event(
+            "phase_start",
+            phase="youtube",
+            url=playback_url,
+            configured_url=url,
+            seconds=seconds,
+        )
         self.browser.open_url(playback_url, wait_seconds=8)
         self._active_wait(seconds, action="youtube")
         self._event("phase_end", phase="youtube")
@@ -81,17 +90,38 @@ class WorkloadRunner:
         youtube_url = cfg["youtube_url"]
         playback_url = _youtube_playback_url(youtube_url)
         self.browser.open_url(playback_url, wait_seconds=8)
-        tabs["youtube"] = {"index": index, "url": playback_url, "configured_url": youtube_url}
-        self._event("daily_tab_opened", phase="youtube", tab_index=index, url=playback_url, configured_url=youtube_url)
+        tabs["youtube"] = {
+            "index": index,
+            "url": playback_url,
+            "configured_url": youtube_url,
+        }
+        self._event(
+            "daily_tab_opened",
+            phase="youtube",
+            tab_index=index,
+            url=playback_url,
+            configured_url=youtube_url,
+        )
 
         index += 1
-        docs_url = cfg.get("google_docs_url", "https://docs.google.com/document/u/0/create")
+        docs_url = cfg.get(
+            "google_docs_url", "https://docs.google.com/document/u/0/create"
+        )
         self.browser.new_tab(docs_url, wait_seconds=8)
         doc_url = self.browser.current_url()
         tabs["docs"] = {"index": index, "url": doc_url or docs_url}
-        self._event("daily_tab_opened", phase="google_docs", tab_index=index, url=doc_url or docs_url)
+        self._event(
+            "daily_tab_opened",
+            phase="google_docs",
+            tab_index=index,
+            url=doc_url or docs_url,
+        )
         if doc_url and _is_google_doc_url(doc_url):
-            self._event("google_doc_created_or_opened", url=doc_url, cleanup="delete_after_benchmark")
+            self._event(
+                "google_doc_created_or_opened",
+                url=doc_url,
+                cleanup="delete_after_benchmark",
+            )
 
         news_tabs = []
         for url in cfg.get("news_urls", [])[:2]:
@@ -117,7 +147,9 @@ class WorkloadRunner:
         self._event("daily_tabs_setup_end", tab_count=index)
         return tabs
 
-    def _work_daily_tab(self, phase: str, tab_info: dict[str, Any] | list[dict[str, Any]], seconds: int) -> None:
+    def _work_daily_tab(
+        self, phase: str, tab_info: dict[str, Any] | list[dict[str, Any]], seconds: int
+    ) -> None:
         if seconds <= 0:
             self._event("phase_skip", phase=phase, reason="no time remaining")
             return
@@ -126,14 +158,22 @@ class WorkloadRunner:
                 self._event("phase_skip", phase=phase, reason="no tabs configured")
                 time.sleep(seconds)
                 return
-            allocations = _phase_seconds([(str(i), 1 / len(tab_info)) for i in range(len(tab_info))], seconds)
+            allocations = _phase_seconds(
+                [(str(i), 1 / len(tab_info)) for i in range(len(tab_info))], seconds
+            )
             for i, info in enumerate(tab_info):
                 self._work_daily_tab(phase, info, allocations[str(i)])
             return
 
         self.browser.switch_to_tab(tab_info["index"])
         event_phase = "google_docs" if phase == "docs" else phase
-        self._event("phase_start", phase=event_phase, url=tab_info.get("url"), tab_index=tab_info["index"], seconds=seconds)
+        self._event(
+            "phase_start",
+            phase=event_phase,
+            url=tab_info.get("url"),
+            tab_index=tab_info["index"],
+            seconds=seconds,
+        )
         if phase == "youtube":
             self._active_wait(seconds, action="youtube")
         elif phase == "docs":
@@ -165,7 +205,11 @@ class WorkloadRunner:
         time.sleep(2)
         doc_url = self.browser.current_url()
         if doc_url and _is_google_doc_url(doc_url):
-            self._event("google_doc_created_or_opened", url=doc_url, cleanup="delete_after_benchmark")
+            self._event(
+                "google_doc_created_or_opened",
+                url=doc_url,
+                cleanup="delete_after_benchmark",
+            )
         self.browser.type_text_slow(DOC_TEXT, self.typing_cadence)
         self.browser.keystroke("a", modifiers=["command"])
         time.sleep(0.5)
@@ -180,7 +224,9 @@ class WorkloadRunner:
             self._event("phase_skip", phase=phase, reason="no urls configured")
             time.sleep(seconds)
             return
-        allocations = _phase_seconds([(str(idx), 1 / len(urls)) for idx in range(len(urls))], seconds)
+        allocations = _phase_seconds(
+            [(str(idx), 1 / len(urls)) for idx in range(len(urls))], seconds
+        )
         for idx, url in enumerate(urls):
             per_url = allocations[str(idx)]
             self._event("phase_start", phase=phase, url=url, seconds=per_url, index=idx)
@@ -211,12 +257,18 @@ class WorkloadRunner:
                     self.browser.scroll(1)
             elif action == "docs":
                 if i % 3 == 0:
-                    self.browser.type_text_slow("\nAdditional benchmark sentence for editing cadence.", self.typing_cadence)
+                    self.browser.type_text_slow(
+                        "\nAdditional benchmark sentence for editing cadence.",
+                        self.typing_cadence,
+                    )
             i += 1
             time.sleep(min(8, max(0, deadline - time.monotonic())))
 
     def _event(self, event: str, **data: Any) -> None:
-        append_jsonl(self.events_path, {"timestamp": time.time(), "event": event, **data})
+        append_jsonl(
+            self.events_path, {"timestamp": time.time(), "event": event, **data}
+        )
+
 
 def _phase_seconds(phases: list[tuple[str, float]], total: int) -> dict[str, int]:
     allocated = {name: int(total * fraction) for name, fraction in phases}
@@ -235,4 +287,6 @@ def _youtube_playback_url(url: str) -> str:
     params = dict(parse_qsl(parsed.query, keep_blank_values=True))
     params["autoplay"] = "1"
     query = urlencode(params)
-    return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, query, parsed.fragment))
+    return urlunsplit(
+        (parsed.scheme, parsed.netloc, parsed.path, query, parsed.fragment)
+    )

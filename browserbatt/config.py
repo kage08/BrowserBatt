@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-
 KNOWN_BROWSERS = ("chrome", "safari", "edge", "firefox", "zen")
 KNOWN_WORKLOADS = ("daily", "media", "reading")
 
@@ -61,7 +60,10 @@ def load_config(path: Path) -> BrowserBattConfig:
 def rotated_orders(browsers: list[str], repetitions: int) -> list[list[str]]:
     if not browsers:
         return []
-    return [browsers[i % len(browsers) :] + browsers[: i % len(browsers)] for i in range(repetitions)]
+    return [
+        browsers[i % len(browsers) :] + browsers[: i % len(browsers)]
+        for i in range(repetitions)
+    ]
 
 
 def _validate(config: BrowserBattConfig) -> None:
@@ -72,13 +74,25 @@ def _validate(config: BrowserBattConfig) -> None:
         raise ValueError("measurement.repetitions must be >= 1.")
     if m.sample_interval_seconds < 1:
         raise ValueError("measurement.sample_interval_seconds must be >= 1.")
-    for field_name in ["warmup_seconds", "cooldown_seconds", "baseline_seconds", "min_battery_percent"]:
+    for field_name in [
+        "warmup_seconds",
+        "cooldown_seconds",
+        "baseline_seconds",
+        "min_battery_percent",
+    ]:
         if getattr(m, field_name) < 0:
             raise ValueError(f"measurement.{field_name} must be >= 0.")
-    if m.screen_brightness_percent is not None and not 0 <= m.screen_brightness_percent <= 100:
-        raise ValueError("measurement.screen_brightness_percent must be between 0 and 100, or null.")
+    if (
+        m.screen_brightness_percent is not None
+        and not 0 <= m.screen_brightness_percent <= 100
+    ):
+        raise ValueError(
+            "measurement.screen_brightness_percent must be between 0 and 100, or null."
+        )
     for browser in m.browser_order:
         if browser not in KNOWN_BROWSERS:
             raise ValueError(f"Unknown browser in measurement.browser_order: {browser}")
     if not any(browser in config.browsers for browser in m.browser_order):
-        raise ValueError("measurement.browser_order must include at least one configured browser.")
+        raise ValueError(
+            "measurement.browser_order must include at least one configured browser."
+        )

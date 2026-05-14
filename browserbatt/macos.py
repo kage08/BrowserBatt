@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import ctypes
-import plistlib
 import os
+import plistlib
 import re
 import shutil
 import subprocess
@@ -44,7 +44,11 @@ def prevent_sleep(reason: str):
             text=True,
         )
     try:
-        yield {"enabled": proc is not None, "pid": proc.pid if proc else None, "reason": reason}
+        yield {
+            "enabled": proc is not None,
+            "pid": proc.pid if proc else None,
+            "reason": reason,
+        }
     finally:
         stop_process(proc, timeout=2)
 
@@ -69,10 +73,21 @@ def get_screen_brightness() -> dict[str, Any]:
     core_graphics, display_services = api
     display_id = core_graphics.CGMainDisplayID()
     value = ctypes.c_float()
-    result = display_services.DisplayServicesGetBrightness(display_id, ctypes.byref(value))
+    result = display_services.DisplayServicesGetBrightness(
+        display_id, ctypes.byref(value)
+    )
     if result != 0:
-        return {"available": False, "method": "DisplayServicesGetBrightness", "value": None, "result": int(result)}
-    return {"available": True, "method": "DisplayServicesGetBrightness", "value": float(value.value)}
+        return {
+            "available": False,
+            "method": "DisplayServicesGetBrightness",
+            "value": None,
+            "result": int(result),
+        }
+    return {
+        "available": True,
+        "method": "DisplayServicesGetBrightness",
+        "value": float(value.value),
+    }
 
 
 def set_screen_brightness(percent: int) -> dict[str, Any]:
@@ -81,7 +96,9 @@ def set_screen_brightness(percent: int) -> dict[str, Any]:
     if api is not None:
         core_graphics, display_services = api
         display_id = core_graphics.CGMainDisplayID()
-        result = display_services.DisplayServicesSetBrightness(display_id, ctypes.c_float(target))
+        result = display_services.DisplayServicesSetBrightness(
+            display_id, ctypes.c_float(target)
+        )
         observed = get_screen_brightness()
         return {
             "requested_percent": percent,
@@ -102,16 +119,22 @@ def set_screen_brightness(percent: int) -> dict[str, Any]:
     }
 
 
-def ensure_screen_brightness(percent: int, tolerance_percent: float = 2.0) -> dict[str, Any]:
+def ensure_screen_brightness(
+    percent: int, tolerance_percent: float = 2.0
+) -> dict[str, Any]:
     result = set_screen_brightness(percent)
     observed = result.get("observed", {})
     value = observed.get("value")
     if value is None:
-        raise RuntimeError(f"Could not verify screen brightness after setting {percent}%: {result}")
+        raise RuntimeError(
+            f"Could not verify screen brightness after setting {percent}%: {result}"
+        )
     observed_percent = float(value) * 100.0
     result["observed_percent"] = observed_percent
     if abs(observed_percent - percent) > tolerance_percent:
-        raise RuntimeError(f"Screen brightness is {observed_percent:.1f}%, expected {percent}% (+/- {tolerance_percent}%).")
+        raise RuntimeError(
+            f"Screen brightness is {observed_percent:.1f}%, expected {percent}% (+/- {tolerance_percent}%)."
+        )
     return result
 
 
@@ -132,7 +155,9 @@ def browser_versions() -> dict[str, str | None]:
         try:
             with plist.open("rb") as f:
                 info = plistlib.load(f)
-            out[key] = info.get("CFBundleShortVersionString") or info.get("CFBundleVersion")
+            out[key] = info.get("CFBundleShortVersionString") or info.get(
+                "CFBundleVersion"
+            )
         except Exception:
             out[key] = None
     return out
@@ -150,15 +175,29 @@ def battery_status() -> BatteryStatus:
         match = re.search(r"(\d+)%;\s*([^;]+);", pmset.stdout)
         if match:
             percent = int(match.group(1))
-            charging = "charging" in match.group(2).lower() and "discharging" not in match.group(2).lower()
+            charging = (
+                "charging" in match.group(2).lower()
+                and "discharging" not in match.group(2).lower()
+            )
 
     voltage = amperage = current_capacity = max_capacity = design_capacity = None
     ioreg = run_cmd(["ioreg", "-rn", "AppleSmartBattery"])
     if ioreg.stdout:
-        voltage = _ioreg_int(ioreg.stdout, "AppleRawBatteryVoltage") or _ioreg_int(ioreg.stdout, "Voltage")
-        amperage = _signed(_ioreg_int(ioreg.stdout, "InstantAmperage") or _ioreg_int(ioreg.stdout, "Amperage"))
-        current_capacity = _ioreg_int(ioreg.stdout, "AppleRawCurrentCapacity") or _ioreg_int(ioreg.stdout, "CurrentCapacity")
-        max_capacity = _ioreg_int(ioreg.stdout, "AppleRawMaxCapacity") or _ioreg_int(ioreg.stdout, "NominalChargeCapacity") or _ioreg_int(ioreg.stdout, "MaxCapacity")
+        voltage = _ioreg_int(ioreg.stdout, "AppleRawBatteryVoltage") or _ioreg_int(
+            ioreg.stdout, "Voltage"
+        )
+        amperage = _signed(
+            _ioreg_int(ioreg.stdout, "InstantAmperage")
+            or _ioreg_int(ioreg.stdout, "Amperage")
+        )
+        current_capacity = _ioreg_int(
+            ioreg.stdout, "AppleRawCurrentCapacity"
+        ) or _ioreg_int(ioreg.stdout, "CurrentCapacity")
+        max_capacity = (
+            _ioreg_int(ioreg.stdout, "AppleRawMaxCapacity")
+            or _ioreg_int(ioreg.stdout, "NominalChargeCapacity")
+            or _ioreg_int(ioreg.stdout, "MaxCapacity")
+        )
         design_capacity = _ioreg_int(ioreg.stdout, "DesignCapacity")
 
     watts = None
@@ -251,12 +290,22 @@ def _current_pid() -> int:
 
 def _display_api():
     try:
-        core_graphics = ctypes.cdll.LoadLibrary("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics")
-        display_services = ctypes.cdll.LoadLibrary("/System/Library/PrivateFrameworks/DisplayServices.framework/DisplayServices")
+        core_graphics = ctypes.cdll.LoadLibrary(
+            "/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics"
+        )
+        display_services = ctypes.cdll.LoadLibrary(
+            "/System/Library/PrivateFrameworks/DisplayServices.framework/DisplayServices"
+        )
         core_graphics.CGMainDisplayID.restype = ctypes.c_uint32
-        display_services.DisplayServicesGetBrightness.argtypes = [ctypes.c_uint32, ctypes.POINTER(ctypes.c_float)]
+        display_services.DisplayServicesGetBrightness.argtypes = [
+            ctypes.c_uint32,
+            ctypes.POINTER(ctypes.c_float),
+        ]
         display_services.DisplayServicesGetBrightness.restype = ctypes.c_int
-        display_services.DisplayServicesSetBrightness.argtypes = [ctypes.c_uint32, ctypes.c_float]
+        display_services.DisplayServicesSetBrightness.argtypes = [
+            ctypes.c_uint32,
+            ctypes.c_float,
+        ]
         display_services.DisplayServicesSetBrightness.restype = ctypes.c_int
         return core_graphics, display_services
     except Exception:

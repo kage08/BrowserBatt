@@ -25,7 +25,9 @@ def summarize_run(run_dir: Path) -> dict[str, Any]:
         "watts_max": max(watts) if watts else None,
         "battery_percent_start": percents[0] if percents else None,
         "battery_percent_end": percents[-1] if percents else None,
-        "battery_percent_delta": (percents[0] - percents[-1]) if len(percents) >= 2 else None,
+        "battery_percent_delta": (percents[0] - percents[-1])
+        if len(percents) >= 2
+        else None,
     }
     write_json(run_dir / "summary.json", summary)
     return summary
@@ -63,8 +65,14 @@ def analyze(root: Path) -> dict[str, Any]:
             "ci95_watts": _ci95(watts),
             "baseline_watts": baseline_watts,
         }
-        result["incremental_watts"] = result["mean_watts"] - baseline_watts if result["mean_watts"] is not None and baseline_watts is not None else None
-        result["estimated_battery_life_hours"] = _battery_life(root, result["mean_watts"])
+        result["incremental_watts"] = (
+            result["mean_watts"] - baseline_watts
+            if result["mean_watts"] is not None and baseline_watts is not None
+            else None
+        )
+        result["estimated_battery_life_hours"] = _battery_life(
+            root, result["mean_watts"]
+        )
         results.append(result)
 
     report = {"root": str(root), "baseline_watts": baseline_watts, "results": results}
@@ -79,7 +87,9 @@ def write_markdown_report(root: Path, report: dict[str, Any]) -> None:
     lines.append("")
     lines.append(f"Baseline watts: `{_fmt(report.get('baseline_watts'))}`")
     lines.append("")
-    lines.append("| Workload | Browser | Runs | Usable | Mean W | Incremental W | Median W | 95% CI W | Est. Battery Hours |")
+    lines.append(
+        "| Workload | Browser | Runs | Usable | Mean W | Incremental W | Median W | 95% CI W | Est. Battery Hours |"
+    )
     lines.append("|---|---:|---:|---:|---:|---:|---:|---:|---:|")
     for row in report["results"]:
         lines.append(
@@ -127,7 +137,10 @@ def _battery_life(root: Path, watts: float | None) -> float | None:
 
 def _baseline_watts(root: Path) -> float | None:
     values = []
-    for path in [root / "baseline-start" / "summary.json", root / "baseline-end" / "summary.json"]:
+    for path in [
+        root / "baseline-start" / "summary.json",
+        root / "baseline-end" / "summary.json",
+    ]:
         if path.exists():
             data = json.loads(path.read_text(encoding="utf-8"))
             value = data.get("watts_mean")

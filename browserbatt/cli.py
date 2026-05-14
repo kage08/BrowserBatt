@@ -8,7 +8,12 @@ from pathlib import Path
 from .analysis import analyze
 from .browser import BROWSERS, BrowserController, ensure_accessibility_hint
 from .config import KNOWN_WORKLOADS, load_config
-from .macos import battery_status, browser_versions, command_exists, get_screen_brightness
+from .macos import (
+    battery_status,
+    browser_versions,
+    command_exists,
+    get_screen_brightness,
+)
 from .runner import estimate_runtime, run_workload
 
 
@@ -36,7 +41,9 @@ def main(argv: list[str] | None = None) -> None:
         help="Only run the selected browser. Repeat to run a subset, e.g. --browser chrome --browser safari.",
     )
     p_run.add_argument("--out", type=Path, default=Path("runs"))
-    p_run.add_argument("--yes", action="store_true", help="Confirm starting the long benchmark")
+    p_run.add_argument(
+        "--yes", action="store_true", help="Confirm starting the long benchmark"
+    )
 
     p_analyze = sub.add_parser("analyze", help="Analyze a run directory")
     p_analyze.add_argument("run_dir", type=Path)
@@ -50,7 +57,9 @@ def main(argv: list[str] | None = None) -> None:
         run(args)
     elif args.cmd == "analyze":
         report = analyze(args.run_dir)
-        print(f"Wrote {args.run_dir / 'analysis.json'} and {args.run_dir / 'report.md'}")
+        print(
+            f"Wrote {args.run_dir / 'analysis.json'} and {args.run_dir / 'report.md'}"
+        )
         print(f"Result rows: {len(report['results'])}")
 
 
@@ -62,9 +71,20 @@ def doctor(config_path: Path) -> None:
     print(f"Screen brightness: {get_screen_brightness()}")
     print(f"Browser versions: {browser_versions()}")
     for browser in config.browsers:
-        controller = BrowserController(browser, config.automation.viewport_width, config.automation.viewport_height)
-        print(f"{browser}: {'installed' if controller.installed() else 'missing'} at {BROWSERS[browser].bundle_path}")
-    for cmd in ["pmset", "ioreg", "osascript", "caffeinate", "powermetrics", "safaridriver"]:
+        controller = BrowserController(
+            browser, config.automation.viewport_width, config.automation.viewport_height
+        )
+        print(
+            f"{browser}: {'installed' if controller.installed() else 'missing'} at {BROWSERS[browser].bundle_path}"
+        )
+    for cmd in [
+        "pmset",
+        "ioreg",
+        "osascript",
+        "caffeinate",
+        "powermetrics",
+        "safaridriver",
+    ]:
         print(f"{cmd}: {'ok' if command_exists(cmd) else 'missing'}")
     print(ensure_accessibility_hint())
 
@@ -97,10 +117,14 @@ def run(args: argparse.Namespace) -> None:
     print(f"Browsers: {', '.join(config.measurement.browser_order)}")
     print(f"Estimated runtime for workload '{args.workload}': {hours:.2f} hours")
     if not args.yes:
-        print("Full benchmark runs close/open real browser windows and can run for hours. Re-run with --yes to start.")
+        print(
+            "Full benchmark runs close/open real browser windows and can run for hours. Re-run with --yes to start."
+        )
         sys.exit(2)
     if hours > 6:
-        print("Warning: this exceeds the 6 hour target. Reduce durations/repetitions if that is not intended.")
+        print(
+            "Warning: this exceeds the 6 hour target. Reduce durations/repetitions if that is not intended."
+        )
     root = run_workload(config, args.workload, args.out, dry_run=False)
     analyze(root)
     status_path = root / "status.json"

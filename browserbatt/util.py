@@ -13,8 +13,12 @@ def now_iso() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%S%z")
 
 
-def run_cmd(args: list[str], timeout: float | None = None, check: bool = False) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(args, text=True, capture_output=True, timeout=timeout, check=check)
+def run_cmd(
+    args: list[str], timeout: float | None = None, check: bool = False
+) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        args, text=True, capture_output=True, timeout=timeout, check=check
+    )
 
 
 def write_json(path: Path, data: Any) -> None:
@@ -31,7 +35,9 @@ def append_jsonl(path: Path, data: Any) -> None:
         f.write("\n")
 
 
-def write_csv(path: Path, rows: Iterable[dict[str, Any]], fieldnames: list[str]) -> None:
+def write_csv(
+    path: Path, rows: Iterable[dict[str, Any]], fieldnames: list[str]
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
@@ -58,4 +64,3 @@ def sleep_until(deadline_monotonic: float, tick: float = 0.25) -> None:
         if remaining <= 0:
             return
         time.sleep(min(tick, remaining))
-

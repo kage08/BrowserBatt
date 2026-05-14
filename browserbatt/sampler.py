@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import threading
-import time
 from pathlib import Path
 from typing import Any
 
@@ -10,7 +9,13 @@ from .util import write_csv
 
 
 class Sampler:
-    def __init__(self, out_dir: Path, browser: str | None, interval_seconds: int, use_powermetrics: bool) -> None:
+    def __init__(
+        self,
+        out_dir: Path,
+        browser: str | None,
+        interval_seconds: int,
+        use_powermetrics: bool,
+    ) -> None:
         self.out_dir = out_dir
         self.browser = browser
         self.interval_seconds = interval_seconds
@@ -28,7 +33,9 @@ class Sampler:
                 self.out_dir / "powermetrics.txt",
                 max(1000, int(self.interval_seconds * 1000)),
             )
-        self._thread = threading.Thread(target=self._loop, name="browserbatt-sampler", daemon=True)
+        self._thread = threading.Thread(
+            target=self._loop, name="browserbatt-sampler", daemon=True
+        )
         self._thread.start()
 
     def stop(self) -> None:
@@ -60,24 +67,48 @@ class Sampler:
             "design_capacity_mah",
         ]
         write_csv(self.out_dir / "power.csv", self._power_rows, power_fields)
-        proc_fields = ["timestamp", "pid", "ppid", "cpu_percent", "mem_percent", "rss_kb", "command"]
+        proc_fields = [
+            "timestamp",
+            "pid",
+            "ppid",
+            "cpu_percent",
+            "mem_percent",
+            "rss_kb",
+            "command",
+        ]
         write_csv(self.out_dir / "processes.csv", self._process_rows, proc_fields)
         self._write_warnings()
 
     def _write_warnings(self) -> None:
         warnings: list[str] = []
-        sources = {row.get("power_source") for row in self._power_rows if row.get("power_source")}
+        sources = {
+            row.get("power_source")
+            for row in self._power_rows
+            if row.get("power_source")
+        }
         if len(sources) > 1:
             warnings.append(f"Power source changed during sample: {sorted(sources)}")
         if any(row.get("is_charging") for row in self._power_rows):
             warnings.append("Battery reported charging during sample.")
-        missing_watts = sum(1 for row in self._power_rows if row.get("instant_watts") in (None, ""))
+        missing_watts = sum(
+            1 for row in self._power_rows if row.get("instant_watts") in (None, "")
+        )
         if self._power_rows and missing_watts == len(self._power_rows):
             warnings.append("No instant watt samples were available.")
         powermetrics = self.out_dir / "powermetrics.txt"
         if self.use_powermetrics and powermetrics.exists():
-            text = powermetrics.read_text(encoding="utf-8", errors="replace")[:2000].lower()
-            if "must be run as root" in text or "operation not permitted" in text or "a password is required" in text:
-                warnings.append("powermetrics did not have permission; run `sudo -v` before BrowserBatt for component power telemetry.")
+            text = powermetrics.read_text(encoding="utf-8", errors="replace")[
+                :2000
+            ].lower()
+            if (
+                "must be run as root" in text
+                or "operation not permitted" in text
+                or "a password is required" in text
+            ):
+                warnings.append(
+                    "powermetrics did not have permission; run `sudo -v` before BrowserBatt for component power telemetry."
+                )
         if warnings:
-            (self.out_dir / "warnings.txt").write_text("\n".join(warnings) + "\n", encoding="utf-8")
+            (self.out_dir / "warnings.txt").write_text(
+                "\n".join(warnings) + "\n", encoding="utf-8"
+            )
